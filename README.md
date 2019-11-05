@@ -19,5 +19,5 @@ export AZURE_STORAGE_KEY=thisshouldntbeinyourcommandhistory
 export GRAFANA_URL=https://grafana.mydomain.com
 export GRAFANA_TOKEN=thisalsoshouldntbeinyourcommandhistory
 
-./backup-tool -storage.type=azure
+./backup-tool -storage.type=azure -datasource=grafana -output.prefix=grafana
 ```

@@ -9,9 +9,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func PutAzureBlob(reader io.Reader, dest string) error {
-	logger := log.WithField("component", "azurestorage")
+var logger = log.WithField("component", "azurestorage")
 
+type Storage struct {
+	container *storage.Container
+}
+
+func (s *Storage) Init() error {
 	// enumerate azure storage environment variables
 	var conf struct {
 		Account   string `envconfig:"AZURE_STORAGE_ACCOUNT" required:"true"`
@@ -39,9 +43,16 @@ func PutAzureBlob(reader io.Reader, dest string) error {
 		return fmt.Errorf("container %s not found", conf.Container)
 	}
 
+	s.container = container
+
+	return nil
+}
+
+func (s *Storage) Write(reader io.Reader, dest string) error {
+
 	// verify blob does not exist
 	logger.Debug("preparing to write to new blob ", dest)
-	blob := container.GetBlobReference(dest)
+	blob := s.container.GetBlobReference(dest)
 	if exists, err := blob.Exists(); err != nil {
 		return fmt.Errorf("initializing blob: %w", err)
 	} else if exists {
