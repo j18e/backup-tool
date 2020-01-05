@@ -40,7 +40,8 @@ func (ds *DataSource) Init() error {
 }
 
 // Archive fetches the dashboards stored in Grafana's database and archives
-// them in a gzipped tarball.
+// them in a gzipped tarball. It returns a reader linked to the bytes of the
+// archive and a (hopefully nil) error.
 func (ds *DataSource) Archive() (io.Reader, error) {
 	logger.Info("archiving dashboards from Grafana's database")
 

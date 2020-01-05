@@ -29,8 +29,22 @@ func main() {
 	flgPathPrefix := flag.String("output.prefix", "", "path prefix to use, if any, in front of yyyy/mm/dd/filename")
 	flag.Parse()
 
-	// check the storage type
-	var stor storage
+	// set the datasource
+	var src DataSource
+	switch *flgDataSource {
+	case "file":
+		src = new(file.DataSource)
+	case "grafana":
+		src = new(grafana.DataSource)
+	default:
+		failopts("valid options for -datasource are: [grafana]")
+	}
+	if err := src.Init(); err != nil {
+		logger.Fatalf("initializing datasource: %v", err)
+	}
+
+	// set the storage type
+	var stor Storage
 	switch *flgStorType {
 	case "local":
 		stor = new(localstorage.Storage)
@@ -43,26 +57,15 @@ func main() {
 		logger.Fatal("initializing storage: %v", err)
 	}
 
-	var src dataSource
-	switch *flgDataSource {
-	case "grafana":
-		src = new(grafana.DataSource)
-	default:
-		failopts("valid options for -datasource are: [grafana]")
-	}
-	if err := src.Init(); err != nil {
-		logger.Fatalf("initializing datasource: %v", err)
-	}
-
-	// get dashboards from Grafana
+	// create the archive
+	logger.Info("archiving the datasource")
 	reader, err := src.Archive()
 	if err != nil {
 		logger.Fatal(err)
 	}
 
-	outFile := fmt.Sprintf("dashboards.tgz")
-	fullPath := filepath.Join(storagePath(*flgPathPrefix), outFile)
-
+	// write the archive to our storage
+	fullPath := filepath.Join(storagePath(*flgPathPrefix), "archive.tgz")
 	logger.Infof("writing archive to %s storage as %s", *flgStorType, fullPath)
 	if err := stor.Write(reader, fullPath); err != nil {
 		logger.Fatalf("writing archive: %v", err)
@@ -70,12 +73,12 @@ func main() {
 	logger.Info("done")
 }
 
-type dataSource interface {
+type DataSource interface {
 	Init() error
-	Archive() (io.Reader, error)
+	Archive() (string, io.Reader, error)
 }
 
-type storage interface {
+type Storage interface {
 	Init() error
 	Write(io.Reader, string) error
 }
